@@ -1,7 +1,28 @@
+import 'package:finwise/models/goals_model.dart';
+import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
 
-class GoalsScreen extends StatelessWidget {
+class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
+
+  @override
+  State<GoalsScreen> createState() => _GoalsScreenState();
+}
+
+class _GoalsScreenState extends State<GoalsScreen> {
+  late Future<GoalsModel> _goalsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _goalsFuture = fetchGoals();
+  }
+
+  Future<GoalsModel> fetchGoals() async {
+    final api = ApiService(baseUrl: 'http://192.168.8.18:4000');
+    final response = await api.get('/api/finance/getGoals');
+    return GoalsModel.fromJson(response.data);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,32 +44,33 @@ class GoalsScreen extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                itemCount: 10,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text('Goal: Visit Paris in 2025 December'),
-                      subtitle: Text('Plan: Save 10000 \$'),
-                      trailing: Column(
-                        children: [
-                          Text('Progress: 5000 \$'),
-                          TextButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                isScrollControlled: true,
-                                showDragHandle: true,
-                                context: context,
-                                builder: (c) {
-                                  return Scaffold();
-                                },
-                              );
-                            },
-                            child: Text('AI Analysis'),
+              child: FutureBuilder<GoalsModel>(
+                future: _goalsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData ||
+                      snapshot.data!.data == null ||
+                      snapshot.data!.data!.isEmpty) {
+                    return Center(child: Text('No goals found.'));
+                  }
+                  final goals = snapshot.data!.data!;
+                  return ListView.builder(
+                    itemCount: goals.length,
+                    itemBuilder: (context, index) {
+                      final goal = goals[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(goal.title ?? 'No Title'),
+                          subtitle: Text(
+                            'Month: ${goal.month ?? ''} ${goal.year ?? ''}',
                           ),
-                        ],
-                      ),
-                    ),
+                          trailing: Text('${goal.amount ?? 0} \$'),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
