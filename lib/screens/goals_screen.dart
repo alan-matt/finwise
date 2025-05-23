@@ -3,13 +3,15 @@ import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
 
 class GoalsScreen extends StatefulWidget {
-  const GoalsScreen({super.key});
+  GoalsScreen({super.key});
 
   @override
   State<GoalsScreen> createState() => _GoalsScreenState();
 }
 
 class _GoalsScreenState extends State<GoalsScreen> {
+  final ApiService apiService = ApiService();
+
   late Future<GoalsModel> _goalsFuture;
 
   @override
@@ -65,9 +67,16 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         child: ListTile(
                           title: Text(goal.title ?? 'No Title'),
                           subtitle: Text(
-                            'Month: ${goal.month ?? ''} ${goal.year ?? ''}',
+                            'Achieve By: ${goal.month ?? ''}/${goal.year ?? ''}',
                           ),
-                          trailing: Text('${goal.amount ?? 0} \$'),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('Total Amount: ${goal.amount ?? 0} \$'),
+                              Text('Progress: ${goal.progress ?? 0} \$'),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -82,13 +91,15 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   _onTap(BuildContext context) {
+    final titleController = TextEditingController();
+    final amountController = TextEditingController();
     int? selectedMonth;
     int? selectedYear;
     showAdaptiveDialog(
       context: context,
       builder: (c) {
-        return Material(
-          child: StatefulBuilder(
+        return Scaffold(
+          body: StatefulBuilder(
             builder: (context, setState) {
               return Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -108,7 +119,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         ),
                       ],
                     ),
-                    TextField(
+                    TextFormField(
+                      controller: titleController,
                       decoration: InputDecoration(
                         labelText: 'Goal',
                         hintText: 'Enter your goal',
@@ -155,13 +167,50 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         ),
                       ],
                     ),
-                    TextField(
+                    TextFormField(
+                      controller: amountController,
                       decoration: InputDecoration(
                         labelText: 'Planned Amount',
                         hintText: 'Enter your planned amount',
                       ),
                     ),
-                    ElevatedButton(onPressed: () {}, child: Text('Add Goal')),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // Handle the add goal action
+                        if (titleController.text.isEmpty ||
+                            amountController.text.isEmpty ||
+                            selectedMonth == null ||
+                            selectedYear == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Please fill all fields')),
+                          );
+                          return;
+                        }
+                        final body = {
+                          "title": titleController.text,
+                          "month": selectedMonth,
+                          "year": selectedYear,
+                          "amount": amountController.text,
+                        };
+                        apiService
+                            .post('/api/finance/addGoal', payload: body)
+                            .then((value) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Goal added successfully'),
+                                ),
+                              );
+                              _goalsFuture = fetchGoals();
+                              Navigator.pop(context);
+                            })
+                            .catchError((error) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to add goal')),
+                              );
+                            });
+                      },
+                      child: Text('Add Goal'),
+                    ),
                   ],
                 ),
               );
