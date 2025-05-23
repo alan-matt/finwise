@@ -1,5 +1,6 @@
 import 'package:finwise/models/exp_model.dart';
 import 'package:finwise/screens/add_expense.dart';
+import 'package:finwise/screens/goals_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -9,6 +10,19 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.large(
+        onPressed: () {
+          showModalBottomSheet(
+            isScrollControlled: true,
+            showDragHandle: true,
+            context: context,
+            builder: (c) {
+              return Scaffold();
+            },
+          );
+        },
+        child: Text('AI Analysis'),
+      ),
       appBar: AppBar(
         title: Text('Finwise'),
         actions: [
@@ -49,33 +63,33 @@ class MyHomePage extends StatelessWidget {
                   series: <PieSeries<DataModel, String>>[
                     PieSeries<DataModel, String>(
                       dataSource: <DataModel>[
-                        ExpenseModel(
+                        DataModel(
                           amount: '2430',
                           category: 'food',
                           desc: 'ANC',
                           date: DateTime(2023, 10, 1),
                         ),
-                        ExpenseModel(
+                        DataModel(
                           amount: '1900',
                           category: 'bills',
                           desc: 'ANC',
                           date: DateTime(2023, 10, 2),
                         ),
-                        ExpenseModel(
+                        DataModel(
                           amount: '100',
                           category: 'food',
                           desc: 'ANC',
                           date: DateTime(2023, 10, 3),
                         ),
-                        ExpenseModel(
+                        DataModel(
                           amount: '500',
-                          category: 'food',
+                          category: 'entertainment',
                           desc: 'ANC',
                           date: DateTime(2023, 10, 5),
                         ),
-                        ExpenseModel(
+                        DataModel(
                           amount: '15000',
-                          category: 'food',
+                          category: 'health',
                           desc: 'ANC',
                           date: DateTime(2023, 10, 5),
                         ),
@@ -87,7 +101,48 @@ class MyHomePage extends StatelessWidget {
                     ),
                   ],
                 ),
+                SfCartesianChart(
+                  title: ChartTitle(text: 'Monthly Expenses'),
+                  primaryXAxis: CategoryAxis(),
+                  series: <CartesianSeries<ExpenseBarData, String>>[
+                    ColumnSeries<ExpenseBarData, String>(
+                      dataSource: <ExpenseBarData>[
+                        ExpenseBarData('Jan', 22000),
+                        ExpenseBarData('Feb', 24000),
+                        ExpenseBarData('Mar', 23445),
+                        ExpenseBarData('Apr', 19982),
+                        ExpenseBarData('May', 14000),
+                      ],
+                      xValueMapper: (ExpenseBarData data, _) => data.month,
+                      yValueMapper: (ExpenseBarData data, _) => data.amount,
+                      dataLabelSettings: DataLabelSettings(isVisible: true),
+                    ),
+                  ],
+                ),
               ],
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GoalsScreen()),
+                );
+              },
+              child: Text('Goals'),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: 10,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: ListTile(
+                      title: Text('Expense ${index + 1}'),
+                      subtitle: Text('Details of expense ${index + 1}'),
+                      trailing: Text('${(index + 1) * 100} \$'),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),

@@ -1,4 +1,4 @@
-abstract class DataModel {
+class DataModel {
   DataModel({
     required this.amount,
     required this.category,
@@ -11,20 +11,8 @@ abstract class DataModel {
   final DateTime date;
 }
 
-class ExpenseModel extends DataModel {
-  ExpenseModel({
-    required super.amount,
-    required super.category,
-    required super.desc,
-    required super.date,
-  });
-}
-
-class IncomeModel extends DataModel {
-  IncomeModel({
-    required super.amount,
-    required super.category,
-    required super.desc,
-    required super.date,
-  });
+class ExpenseBarData {
+  final String month;
+  final double amount;
+  ExpenseBarData(this.month, this.amount);
 }
