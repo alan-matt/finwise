@@ -184,8 +184,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
-<<<<<<< HEAD
-=======
   syncfusion_flutter_charts:
     dependency: "direct main"
     description:
@@ -202,7 +200,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "29.2.5"
->>>>>>> ee31fbf26ece56c97b1fc3d8609fc33b741c9a4a
   term_glyph:
     dependency: transitive
     description:
