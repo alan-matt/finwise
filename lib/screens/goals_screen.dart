@@ -1,8 +1,9 @@
+import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
 
 class GoalsScreen extends StatelessWidget {
-  const GoalsScreen({super.key});
-
+  GoalsScreen({super.key});
+  final ApiService apiService = ApiService();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,13 +61,15 @@ class GoalsScreen extends StatelessWidget {
   }
 
   _onTap(BuildContext context) {
+    final titleController = TextEditingController();
+    final amountController = TextEditingController();
     int? selectedMonth;
     int? selectedYear;
     showAdaptiveDialog(
       context: context,
       builder: (c) {
-        return Material(
-          child: StatefulBuilder(
+        return Scaffold(
+          body: StatefulBuilder(
             builder: (context, setState) {
               return Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -86,7 +89,8 @@ class GoalsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    TextField(
+                    TextFormField(
+                      controller: titleController,
                       decoration: InputDecoration(
                         labelText: 'Goal',
                         hintText: 'Enter your goal',
@@ -133,13 +137,49 @@ class GoalsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    TextField(
+                    TextFormField(
+                      controller: amountController,
                       decoration: InputDecoration(
                         labelText: 'Planned Amount',
                         hintText: 'Enter your planned amount',
                       ),
                     ),
-                    ElevatedButton(onPressed: () {}, child: Text('Add Goal')),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // Handle the add goal action
+                        if (titleController.text.isEmpty ||
+                            amountController.text.isEmpty ||
+                            selectedMonth == null ||
+                            selectedYear == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Please fill all fields')),
+                          );
+                          return;
+                        }
+                        final body = {
+                          "title": titleController.text,
+                          "month": selectedMonth,
+                          "year": selectedMonth,
+                          "amount": amountController.text,
+                        };
+                        apiService
+                            .post('/api/finance/addGoal', payload: body)
+                            .then((value) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Goal added successfully'),
+                                ),
+                              );
+                              Navigator.pop(context);
+                            })
+                            .catchError((error) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to add goal')),
+                              );
+                            });
+                      },
+                      child: Text('Add Goal'),
+                    ),
                   ],
                 ),
               );
