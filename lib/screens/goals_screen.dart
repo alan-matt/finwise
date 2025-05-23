@@ -1,6 +1,7 @@
 import 'package:finwise/models/goals_model.dart';
 import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class GoalsScreen extends StatefulWidget {
   GoalsScreen({super.key});
@@ -13,6 +14,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   final ApiService apiService = ApiService();
 
   late Future<GoalsModel> _goalsFuture;
+  bool loading = false;
 
   @override
   void initState() {
@@ -43,49 +45,82 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: FutureBuilder<GoalsModel>(
-                future: _goalsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData ||
-                      snapshot.data!.data == null ||
-                      snapshot.data!.data!.isEmpty) {
-                    return Center(child: Text('No goals found.'));
-                  }
-                  final goals = snapshot.data!.data!;
-                  return ListView.builder(
-                    itemCount: goals.length,
-                    itemBuilder: (context, index) {
-                      final goal = goals[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text(goal.title ?? 'No Title'),
-                          subtitle: Text(
-                            'Achieve By: ${goal.month ?? ''}/${goal.year ?? ''}',
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text('Total Amount: ${goal.amount ?? 0} \$'),
-                              Text('Progress: ${goal.progress ?? 0} \$'),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        child:
+            loading
+                ? Center(child: CircularProgressIndicator())
+                : Column(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<GoalsModel>(
+                        future: _goalsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return Center(
+                              child: Text('Error: ${snapshot.error}'),
+                            );
+                          } else if (!snapshot.hasData ||
+                              snapshot.data!.data == null ||
+                              snapshot.data!.data!.isEmpty) {
+                            return Center(child: Text('No goals found.'));
+                          }
+                          final goals = snapshot.data!.data!;
+                          return ListView.builder(
+                            itemCount: goals.length,
+                            itemBuilder: (context, index) {
+                              final goal = goals[index];
+                              return Card(
+                                child: ListTile(
+                                  leading: ElevatedButton(
+                                    onPressed: () {
+                                      showModalBottomSheet(
+                                        constraints: BoxConstraints(
+                                          maxHeight:
+                                              MediaQuery.of(
+                                                context,
+                                              ).size.height *
+                                              0.8,
+                                        ),
+                                        useSafeArea: false,
+                                        isScrollControlled: true,
+                                        showDragHandle: true,
+                                        context: context,
+                                        builder: (c) {
+                                          return BottomSheetContent(
+                                            goalId: goal.sId!,
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: Text('AI Analysis'),
+                                  ),
+                                  title: Text(goal.title ?? 'No Title'),
+                                  subtitle: Text(
+                                    'Achieve By: ${goal.month ?? ''}/${goal.year ?? ''}',
+                                  ),
+                                  trailing: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Total Amount: ${goal.amount ?? 0} \$',
+                                      ),
+                                      Text(
+                                        'Progress: ${goal.progress ?? 0} \$',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -218,6 +253,68 @@ class _GoalsScreenState extends State<GoalsScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class BottomSheetContent extends StatefulWidget {
+  final String goalId;
+
+  const BottomSheetContent({super.key, required this.goalId});
+
+  @override
+  State<BottomSheetContent> createState() => _BottomSheetContentState();
+}
+
+class _BottomSheetContentState extends State<BottomSheetContent> {
+  bool loading = true;
+  String? suggestion;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  void fetchData() async {
+    try {
+      final api = ApiService(baseUrl: 'http://192.168.8.17:4000');
+
+      final value = await api.get(
+        '/api/finance/aiAnalyzer2?goalId=${widget.goalId}',
+      );
+      if (!mounted) return;
+      setState(() {
+        print(value.data['data']);
+        suggestion = value.data['data']['suggestion'];
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        error = 'Failed to load suggestion.';
+        loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const SizedBox(
+        height: 300,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (error != null) {
+      return SizedBox(height: 300, child: Center(child: Text(error!)));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: MarkdownBody(data: suggestion ?? ''),
     );
   }
 }

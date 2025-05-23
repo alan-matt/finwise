@@ -4,6 +4,7 @@ import 'package:finwise/screens/add_expense.dart';
 import 'package:finwise/screens/goals_screen.dart';
 import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
 
@@ -49,11 +50,15 @@ class _MyHomePageState extends State<MyHomePage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           showModalBottomSheet(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            useSafeArea: false,
             isScrollControlled: true,
             showDragHandle: true,
             context: context,
             builder: (c) {
-              return Scaffold();
+              return BottomSheetContent();
             },
           );
         },
@@ -393,6 +398,64 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         },
       ),
+    );
+  }
+}
+
+class BottomSheetContent extends StatefulWidget {
+  const BottomSheetContent({super.key});
+
+  @override
+  State<BottomSheetContent> createState() => _BottomSheetContentState();
+}
+
+class _BottomSheetContentState extends State<BottomSheetContent> {
+  bool loading = true;
+  String? suggestion;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  void fetchData() async {
+    try {
+      final api = ApiService(baseUrl: 'http://192.168.8.17:4000');
+
+      final value = await api.get('/api/finance/aiAnalyzer3');
+      if (!mounted) return;
+      setState(() {
+        print(value.data['data']);
+        suggestion = value.data['data']['suggestion'];
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        error = 'Failed to load suggestion.';
+        loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const SizedBox(
+        height: 300,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (error != null) {
+      return SizedBox(height: 300, child: Center(child: Text(error!)));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: MarkdownBody(data: suggestion ?? ''),
     );
   }
 }
