@@ -1,11 +1,32 @@
 import 'package:finwise/models/exp_model.dart';
+import 'package:finwise/models/transictions_model.dart';
 import 'package:finwise/screens/add_expense.dart';
 import 'package:finwise/screens/goals_screen.dart';
+import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  late Future<TransictionModel> _transictionFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _transictionFuture = fetchGoals();
+  }
+
+  Future<TransictionModel> fetchGoals() async {
+    final api = ApiService(baseUrl: 'http://192.168.8.18:4000');
+    final response = await api.get('/api/finance/getTransactions');
+    return TransictionModel.fromJson(response.data);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,16 +151,42 @@ class MyHomePage extends StatelessWidget {
               },
               child: Text('Goals'),
             ),
+            SizedBox(height: 10),
             Expanded(
-              child: ListView.builder(
-                itemCount: 10,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text('Expense ${index + 1}'),
-                      subtitle: Text('Details of expense ${index + 1}'),
-                      trailing: Text('${(index + 1) * 100} \$'),
-                    ),
+              child: FutureBuilder<TransictionModel>(
+                future: _transictionFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData ||
+                      snapshot.data!.data == null ||
+                      snapshot.data!.data!.isEmpty) {
+                    return Center(child: Text('No transaction found.'));
+                  }
+                  final transiction = snapshot.data!.data!;
+                  return ListView.builder(
+                    itemCount: transiction.length,
+                    itemBuilder: (context, index) {
+                      final t = transiction[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(t.title ?? 'No Title'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Month: ${t.month ?? ''} Year ${t.year ?? ''}',
+                              ),
+                              // Text('Progress: ${t.progress ?? 0}'),
+                              Text('Created: ${t.createdAt ?? ''}'),
+                            ],
+                          ),
+                          trailing: Text('${t.amount ?? 0} \$'),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
