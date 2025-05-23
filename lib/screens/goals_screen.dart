@@ -21,7 +21,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Future<GoalsModel> fetchGoals() async {
-    final api = ApiService(baseUrl: 'http://192.168.8.18:4000');
+    final api = ApiService(baseUrl: 'http://192.168.8.17:4000');
     final response = await api.get('/api/finance/getGoals');
     return GoalsModel.fromJson(response.data);
   }

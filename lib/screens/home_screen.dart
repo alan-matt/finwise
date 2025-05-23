@@ -5,6 +5,7 @@ import 'package:finwise/screens/goals_screen.dart';
 import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:intl/intl.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -15,23 +16,37 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future<TransictionModel> _transictionFuture;
+  late final num totalIncome;
+  late final num totalExpense;
 
   @override
   void initState() {
     super.initState();
-    _transictionFuture = fetchGoals();
+    _transictionFuture = fetchTransactions();
   }
 
-  Future<TransictionModel> fetchGoals() async {
-    final api = ApiService(baseUrl: 'http://192.168.8.18:4000');
+  Future<TransictionModel> fetchTransactions() async {
+    final api = ApiService(baseUrl: 'http://192.168.8.17:4000');
     final response = await api.get('/api/finance/getTransactions');
     return TransictionModel.fromJson(response.data);
   }
 
+  String formatDate(String? date) {
+    if (date == null) return '';
+    try {
+      final dt = DateTime.parse(date);
+      return DateFormat('dd MMM yyyy').format(dt);
+    } catch (_) {
+      return date;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      floatingActionButton: FloatingActionButton.large(
+      backgroundColor: Color(0xFFF6F7FB),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           showModalBottomSheet(
             isScrollControlled: true,
@@ -42,10 +57,20 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           );
         },
-        child: Text('AI Analysis'),
+        icon: Icon(Icons.analytics, color: Colors.white),
+        label: Text('AI Analysis', style: TextStyle(color: Colors.white)),
+        backgroundColor: theme.primaryColor,
       ),
       appBar: AppBar(
-        title: Text('Finwise'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Finwise',
+          style: TextStyle(
+            color: theme.primaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () {
@@ -54,145 +79,319 @@ class _MyHomePageState extends State<MyHomePage> {
                 MaterialPageRoute(builder: (context) => AddExpense()),
               );
             },
-            icon: Icon(Icons.add),
+            icon: Icon(Icons.add, color: theme.primaryColor),
+            tooltip: "Add Expense",
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: FutureBuilder<TransictionModel>(
+        future: _transictionFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData ||
+              snapshot.data!.data == null ||
+              snapshot.data!.data!.isEmpty) {
+            return Center(child: Text('No transaction found.'));
+          }
+          final transiction = snapshot.data!.data!;
+          final expenseData =
+              transiction
+                  .where((e) => e.type!.toLowerCase() == 'expense')
+                  .toList();
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  // Balance Card
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.primaryColor,
+                          theme.primaryColor.withOpacity(0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    padding: EdgeInsets.all(20),
+                    margin: EdgeInsets.only(bottom: 18),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Total Income: 50000 \$'),
-                        Text('Total Expenses: 43214 \$'),
-                        Text('Remaining Balance: ${50000 - 43214} \$'),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Total Income',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '50,000 \$',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Total Expenses',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '43,214 \$',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Balance',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '${50000 - 43214} \$',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                ),
-                SfCircularChart(
-                  title: ChartTitle(text: 'Monthly Sales'),
-                  legend: Legend(isVisible: true),
-                  series: <PieSeries<DataModel, String>>[
-                    PieSeries<DataModel, String>(
-                      dataSource: <DataModel>[
-                        DataModel(
-                          amount: '2430',
-                          category: 'food',
-                          desc: 'ANC',
-                          date: DateTime(2023, 10, 1),
+                  // Charts Row
+                  Column(
+                    children: [
+                      Container(
+                        width: 220,
+                        height: 180,
+                        margin: EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        DataModel(
-                          amount: '1900',
-                          category: 'bills',
-                          desc: 'ANC',
-                          date: DateTime(2023, 10, 2),
+                        child: SfCircularChart(
+                          title: ChartTitle(
+                            text: 'Monthly Sales',
+                            textStyle: TextStyle(fontSize: 12),
+                          ),
+                          legend: Legend(isVisible: true),
+                          series: <PieSeries<Data, String>>[
+                            PieSeries<Data, String>(
+                              dataSource: expenseData,
+                              xValueMapper: (Data sales, _) => sales.category,
+                              yValueMapper: (Data sales, _) => sales.amount,
+                              dataLabelSettings: DataLabelSettings(
+                                isVisible: true,
+                              ),
+                            ),
+                          ],
                         ),
-                        DataModel(
-                          amount: '100',
-                          category: 'food',
-                          desc: 'ANC',
-                          date: DateTime(2023, 10, 3),
+                      ),
+                      SizedBox(height: 20),
+                      Container(
+                        width: 220,
+                        height: 180,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        DataModel(
-                          amount: '500',
-                          category: 'entertainment',
-                          desc: 'ANC',
-                          date: DateTime(2023, 10, 5),
+                        child: SfCartesianChart(
+                          title: ChartTitle(
+                            text: 'Monthly Expenses',
+                            textStyle: TextStyle(fontSize: 12),
+                          ),
+                          primaryXAxis: CategoryAxis(),
+                          series: <CartesianSeries<ExpenseBarData, String>>[
+                            ColumnSeries<ExpenseBarData, String>(
+                              dataSource: <ExpenseBarData>[
+                                ExpenseBarData('Jan', 22000),
+                                ExpenseBarData('Feb', 24000),
+                                ExpenseBarData('Mar', 23445),
+                                ExpenseBarData('Apr', 19982),
+                                ExpenseBarData('May', 14000),
+                              ],
+                              xValueMapper:
+                                  (ExpenseBarData data, _) => data.month,
+                              yValueMapper:
+                                  (ExpenseBarData data, _) => data.amount,
+                              dataLabelSettings: DataLabelSettings(
+                                isVisible: true,
+                              ),
+                            ),
+                          ],
                         ),
-                        DataModel(
-                          amount: '15000',
-                          category: 'health',
-                          desc: 'ANC',
-                          date: DateTime(2023, 10, 5),
-                        ),
-                      ],
-                      xValueMapper: (DataModel sales, _) => sales.category,
-                      yValueMapper:
-                          (DataModel sales, _) => num.tryParse(sales.amount),
-                      dataLabelSettings: DataLabelSettings(isVisible: true),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
                     ),
-                  ],
-                ),
-                SfCartesianChart(
-                  title: ChartTitle(text: 'Monthly Expenses'),
-                  primaryXAxis: CategoryAxis(),
-                  series: <CartesianSeries<ExpenseBarData, String>>[
-                    ColumnSeries<ExpenseBarData, String>(
-                      dataSource: <ExpenseBarData>[
-                        ExpenseBarData('Jan', 22000),
-                        ExpenseBarData('Feb', 24000),
-                        ExpenseBarData('Mar', 23445),
-                        ExpenseBarData('Apr', 19982),
-                        ExpenseBarData('May', 14000),
-                      ],
-                      xValueMapper: (ExpenseBarData data, _) => data.month,
-                      yValueMapper: (ExpenseBarData data, _) => data.amount,
-                      dataLabelSettings: DataLabelSettings(isVisible: true),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => GoalsScreen()),
+                      );
+                    },
+                    icon: Icon(Icons.flag, color: Colors.white),
+                    label: Text(
+                      'Goals',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => GoalsScreen()),
-                );
-              },
-              child: Text('Goals'),
-            ),
-            SizedBox(height: 10),
-            Expanded(
-              child: FutureBuilder<TransictionModel>(
-                future: _transictionFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData ||
-                      snapshot.data!.data == null ||
-                      snapshot.data!.data!.isEmpty) {
-                    return Center(child: Text('No transaction found.'));
-                  }
-                  final transiction = snapshot.data!.data!;
-                  return ListView.builder(
+                  ),
+                  SizedBox(height: 14),
+                  ListView.separated(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
                     itemCount: transiction.length,
+                    separatorBuilder: (context, index) => SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final t = transiction[index];
-                      return Card(
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.07),
+                              blurRadius: 6,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
                         child: ListTile(
-                          title: Text(t.title ?? 'No Title'),
+                          leading: CircleAvatar(
+                            backgroundColor: theme.primaryColor.withOpacity(
+                              0.15,
+                            ),
+                            child: Icon(
+                              Icons.account_balance_wallet,
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                          title: Text(
+                            (t.type ?? 'No Title').toUpperCase(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Month: ${t.month ?? ''} Year ${t.year ?? ''}',
+                              SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Transaction Date: ${DateTime.parse(t.date!).day}-${DateTime.parse(t.date!).month}-${DateTime.parse(t.date!).year}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // Text('Progress: ${t.progress ?? 0}'),
-                              Text('Created: ${t.createdAt ?? ''}'),
+                              SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.category_rounded,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    (t.category ?? '').toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
-                          trailing: Text('${t.amount ?? 0} \$'),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${t.amount ?? 0} \$',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.primaryColor,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
-                  );
-                },
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

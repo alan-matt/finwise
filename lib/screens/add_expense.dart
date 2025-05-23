@@ -58,7 +58,7 @@ class _AddExpenseState extends State<AddExpense> {
   bool loading = false;
   String? selectedGoal;
 
-  final ApiService apiService = ApiService(baseUrl: 'http://192.168.8.18:4000');
+  final ApiService apiService = ApiService(baseUrl: 'http://192.168.8.17:4000');
 
   @override
   void initState() {

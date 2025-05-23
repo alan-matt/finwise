@@ -28,35 +28,32 @@ class TransictionModel {
 }
 
 class Data {
-  int? progress;
   String? sId;
-  String? title;
-  String? month;
-  int? year;
   int? amount;
+  String? type;
+  String? category;
+  String? date;
   String? createdAt;
   String? updatedAt;
   int? iV;
 
   Data({
-    this.progress,
     this.sId,
-    this.title,
-    this.month,
-    this.year,
     this.amount,
+    this.type,
+    this.category,
+    this.date,
     this.createdAt,
     this.updatedAt,
     this.iV,
   });
 
   Data.fromJson(Map<String, dynamic> json) {
-    progress = json['progress'];
     sId = json['_id'];
-    title = json['title'];
-    month = json['month'];
-    year = json['year'];
     amount = json['amount'];
+    type = json['type'];
+    category = json['category'];
+    date = json['date'];
     createdAt = json['createdAt'];
     updatedAt = json['updatedAt'];
     iV = json['__v'];
@@ -64,12 +61,11 @@ class Data {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['progress'] = this.progress;
     data['_id'] = this.sId;
-    data['title'] = this.title;
-    data['month'] = this.month;
-    data['year'] = this.year;
     data['amount'] = this.amount;
+    data['type'] = this.type;
+    data['category'] = this.category;
+    data['date'] = this.date;
     data['createdAt'] = this.createdAt;
     data['updatedAt'] = this.updatedAt;
     data['__v'] = this.iV;
