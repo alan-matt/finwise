@@ -38,16 +38,17 @@ class Data {
   String? updatedAt;
   int? iV;
 
-  Data(
-      {this.progress,
-      this.sId,
-      this.title,
-      this.month,
-      this.year,
-      this.amount,
-      this.createdAt,
-      this.updatedAt,
-      this.iV});
+  Data({
+    this.progress,
+    this.sId,
+    this.title,
+    this.month,
+    this.year,
+    this.amount,
+    this.createdAt,
+    this.updatedAt,
+    this.iV,
+  });
 
   Data.fromJson(Map<String, dynamic> json) {
     progress = json['progress'];
