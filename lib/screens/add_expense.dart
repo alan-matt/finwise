@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:finwise/models/goals_model.dart';
 import 'package:finwise/service/api_ser.dart';
 import 'package:finwise/validator/validator.dart';
@@ -63,6 +62,11 @@ class _AddExpenseState extends State<AddExpense> {
 
   @override
   void initState() {
+    selectedGoal = null;
+    _dateController.clear();
+    _amountController.clear();
+    _catController.clear();
+    _amountController.clear();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         loading = true;
