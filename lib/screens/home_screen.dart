@@ -1,11 +1,32 @@
 import 'package:finwise/models/exp_model.dart';
+import 'package:finwise/models/goals_model.dart';
 import 'package:finwise/screens/add_expense.dart';
 import 'package:finwise/screens/goals_screen.dart';
+import 'package:finwise/service/api_ser.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  late Future<GoalsModel> _goalsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _goalsFuture = fetchGoals();
+  }
+
+  Future<GoalsModel> fetchGoals() async {
+    final api = ApiService(baseUrl: 'http://192.168.8.18:4000');
+    final response = await api.get('/api/finance/getGoals');
+    return GoalsModel.fromJson(response.data);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,16 +151,48 @@ class MyHomePage extends StatelessWidget {
               },
               child: Text('Goals'),
             ),
+            // Expanded(
+            //   child: ListView.builder(
+            //     itemCount: 10,
+            //     itemBuilder: (context, index) {
+            //       return Card(
+            //         child: ListTile(
+            //           title: Text('Expense ${index + 1}'),
+            //           subtitle: Text('Details of expense ${index + 1}'),
+            //           trailing: Text('${(index + 1) * 100} \$'),
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
             Expanded(
-              child: ListView.builder(
-                itemCount: 10,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text('Expense ${index + 1}'),
-                      subtitle: Text('Details of expense ${index + 1}'),
-                      trailing: Text('${(index + 1) * 100} \$'),
-                    ),
+              child: FutureBuilder<GoalsModel>(
+                future: _goalsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData ||
+                      snapshot.data!.data == null ||
+                      snapshot.data!.data!.isEmpty) {
+                    return Center(child: Text('No goals found.'));
+                  }
+                  final goals = snapshot.data!.data!;
+                  return ListView.builder(
+                    itemCount: goals.length,
+                    itemBuilder: (context, index) {
+                      final goal = goals[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(goal.title ?? 'No Title'),
+                          subtitle: Text(
+                            'Month: ${goal.month ?? ''} ${goal.year ?? ''}',
+                          ),
+                          trailing: Text('${goal.amount ?? 0} \$'),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

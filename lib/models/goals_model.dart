@@ -33,19 +33,22 @@ class Data {
   String? month;
   int? year;
   int? amount;
+  num? progress;
   String? createdAt;
   String? updatedAt;
   int? iV;
 
-  Data(
-      {this.sId,
-      this.title,
-      this.month,
-      this.year,
-      this.amount,
-      this.createdAt,
-      this.updatedAt,
-      this.iV});
+  Data({
+    this.sId,
+    this.title,
+    this.month,
+    this.year,
+    this.amount,
+    this.createdAt,
+    this.updatedAt,
+    this.progress,
+    this.iV,
+  });
 
   Data.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
@@ -53,6 +56,7 @@ class Data {
     month = json['month'];
     year = json['year'];
     amount = json['amount'];
+    progress = json['progress'];
     createdAt = json['createdAt'];
     updatedAt = json['updatedAt'];
     iV = json['__v'];
@@ -65,6 +69,7 @@ class Data {
     data['month'] = this.month;
     data['year'] = this.year;
     data['amount'] = this.amount;
+    data['progress'] = this.progress;
     data['createdAt'] = this.createdAt;
     data['updatedAt'] = this.updatedAt;
     data['__v'] = this.iV;
