@@ -10,6 +10,7 @@ dropDownButton(
   bool enableBorder = false,
   String? hintText,
   required String? Function(String?)? validator,
+  Function(String?)? onSelect,
 }) {
   return TextFieldComponent(
     textStyle: TextStyle(color: Colors.white),
@@ -26,6 +27,9 @@ dropDownButton(
                 dropDownList: dropDownList,
                 onSelect: (p0) {
                   selectedValue.text = p0 ?? '';
+                  if (onSelect != null) {
+                    onSelect(p0);
+                  }
                 },
                 hintText: hintText,
                 enableBorder: enableBorder,
