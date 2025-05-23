@@ -151,20 +151,6 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               child: Text('Goals'),
             ),
-            // Expanded(
-            //   child: ListView.builder(
-            //     itemCount: 10,
-            //     itemBuilder: (context, index) {
-            //       return Card(
-            //         child: ListTile(
-            //           title: Text('Expense ${index + 1}'),
-            //           subtitle: Text('Details of expense ${index + 1}'),
-            //           trailing: Text('${(index + 1) * 100} \$'),
-            //         ),
-            //       );
-            //     },
-            //   ),
-            // ),
             Expanded(
               child: FutureBuilder<GoalsModel>(
                 future: _goalsFuture,
