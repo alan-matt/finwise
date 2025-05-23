@@ -10,7 +10,7 @@ class ApiService {
   ApiService({String? baseUrl})
     : _dio = Dio(
         BaseOptions(
-          baseUrl: baseUrl ?? "",
+          baseUrl: baseUrl ?? "http://192.168.8.18:4000",
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
           sendTimeout: const Duration(seconds: 30),
